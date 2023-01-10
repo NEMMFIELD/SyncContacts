@@ -221,7 +221,7 @@ class ContactsManager {
                     .withValue(ContactsContract.Data.MIMETYPE, MESSAGE_MIME_TYPE)
                     .withValue(ContactsContract.Data.DATA1, number)
                     .withValue(ContactsContract.Data.DATA2, contactName)
-                    .withValue(ContactsContract.Data.DATA3, "Message $number")
+                    .withValue(ContactsContract.Data.DATA3, "Перевести по номеру $number")
                     .build()
             )
 
@@ -238,7 +238,7 @@ class ContactsManager {
                     .withValue(ContactsContract.Data.MIMETYPE, VOICE_MIME_TYPE)
                     .withValue(ContactsContract.Data.DATA1, number)
                     .withValue(ContactsContract.Data.DATA2, contactName)
-                    .withValue(ContactsContract.Data.DATA3, "Voice call $number")
+                    .withValue(ContactsContract.Data.DATA3, "Перевести по СБП на $number")
                     .build()
             )
 
@@ -255,7 +255,7 @@ class ContactsManager {
                     .withValue(ContactsContract.Data.MIMETYPE, VIDEO_MIME_TYPE)
                     .withValue(ContactsContract.Data.DATA1, number)
                     .withValue(ContactsContract.Data.DATA2, contactName)
-                    .withValue(ContactsContract.Data.DATA3, "Video call $number")
+                    .withValue(ContactsContract.Data.DATA3, "В диалог с $number")
                     .build()
             )
 
