@@ -3,14 +3,18 @@ package com.ajay.synccontacts
 import android.Manifest
 import android.accounts.Account
 import android.accounts.AccountManager
+import android.annotation.SuppressLint
 import android.content.*
 import android.content.pm.PackageManager
+import android.database.ContentObserver
+import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
 import android.provider.ContactsContract
 import android.provider.Settings
 import android.util.Log
 import android.view.View
+import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Toast
@@ -18,8 +22,10 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.ajay.synccontacts.syncing.SyncAdapter
 //import com.ajay.synccontacts.network.ApiClient
 import com.ajay.synccontacts.utils.Constants
+import com.ajay.synccontacts.utils.ContactsManager
 
 class MainActivity : AppCompatActivity() {
 
@@ -29,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var registerNumber: EditText
     private lateinit var deregisterNumber: EditText
 
+    @SuppressLint("Range")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -37,14 +44,40 @@ class MainActivity : AppCompatActivity() {
         registerNumber = findViewById(R.id.register_number)
         deregisterNumber = findViewById(R.id.deregister_number)
 
-        if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
-            != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
             ActivityCompat.requestPermissions(
                 this,
                 arrayOf(Manifest.permission.READ_CONTACTS, Manifest.permission.WRITE_CONTACTS),
-                PERMISSIONS_REQUEST_CODE)
+                PERMISSIONS_REQUEST_CODE
+            )
         } else {
             addAppAccount()
+        }
+
+        val observer = ContactsObserver(this, mAccount)
+        contentResolver.registerContentObserver(ContactsContract.AUTHORITY_URI, true, observer)
+    }
+
+
+    class ContactsObserver(private val context: Context, private val account: Account) :
+        ContentObserver(null) {
+        @SuppressLint("Range")
+        override fun onChange(selfChange: Boolean) {
+            super.onChange(selfChange)
+            if (!selfChange) {
+                ContentResolver.requestSync(
+                    account,
+                    ContactsContract.AUTHORITY,
+                    Bundle()
+                )
+            }
+
+        }
+
+        override fun deliverSelfNotifications(): Boolean {
+            return true
         }
     }
 
@@ -53,13 +86,12 @@ class MainActivity : AppCompatActivity() {
      */
     private fun checkIfAppAccountExists(): Boolean {
         var accountExists = false
-        for(account in AccountManager.get(this).accounts) {
-            if(account.type == Constants.ACCOUNT_TYPE) {
+        for (account in AccountManager.get(this).accounts) {
+            if (account.type == Constants.ACCOUNT_TYPE) {
                 accountExists = true
                 break
             }
         }
-
         return accountExists
     }
 
@@ -69,19 +101,26 @@ class MainActivity : AppCompatActivity() {
     private fun addAppAccount() {
         mAccount = Account(Constants.ACCOUNT_NAME, Constants.ACCOUNT_TYPE)
 
-        if(!checkIfAppAccountExists()) {
-            if(AccountManager.get(this).addAccountExplicitly(mAccount, null,null)) {
+        if (!checkIfAppAccountExists()) {
+            if (AccountManager.get(this).addAccountExplicitly(mAccount, null, null)) {
                 ContentResolver.setSyncAutomatically(mAccount, ContactsContract.AUTHORITY, true)
-                ContentResolver.addPeriodicSync(mAccount, ContactsContract.AUTHORITY, Bundle(), SYNC_INTERVAL)
+                ContentResolver.addPeriodicSync(
+                    mAccount,
+                    ContactsContract.AUTHORITY,
+                    Bundle(),
+                    SYNC_INTERVAL
+                )
             }
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>,
-        grantResults: IntArray) {
-        when(requestCode) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        when (requestCode) {
             PERMISSIONS_REQUEST_CODE -> {
-                if(grantResults.isNotEmpty()) {
+                if (grantResults.isNotEmpty()) {
                     if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                         addAppAccount()
                     } else {
@@ -141,14 +180,19 @@ class MainActivity : AppCompatActivity() {
      * Method to handle button clicks
      */
     fun handleClick(view: View) {
-        when(view.id) {
+        when (view.id) {
             R.id.register_number_btn -> {
 
-                if(registerNumber.text.toString().isEmpty() ||
+                if (registerNumber.text.toString().isEmpty() ||
                     registerNumber.text.toString().length < 8 ||
                     registerNumber.text.toString().length > 15 ||
-                    !registerNumber.text.toString().matches("[0-9]+".toRegex())){
-                    Toast.makeText(this@MainActivity, "Please enter a valid number", Toast.LENGTH_SHORT).show()
+                    !registerNumber.text.toString().matches("[0-9]+".toRegex())
+                ) {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Please enter a valid number",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     return
                 }
 
@@ -183,11 +227,16 @@ class MainActivity : AppCompatActivity() {
 
             R.id.deregister_number_btn -> {
 
-                if(deregisterNumber.text.toString().isEmpty() ||
+                if (deregisterNumber.text.toString().isEmpty() ||
                     deregisterNumber.text.toString().length < 8 ||
                     deregisterNumber.text.toString().length > 15 ||
-                    !deregisterNumber.text.toString().matches("[0-9]+".toRegex())){
-                    Toast.makeText(this@MainActivity, "Please enter a valid number", Toast.LENGTH_SHORT).show()
+                    !deregisterNumber.text.toString().matches("[0-9]+".toRegex())
+                ) {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Please enter a valid number",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     return
                 }
 

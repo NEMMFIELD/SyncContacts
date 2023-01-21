@@ -1,8 +1,10 @@
 package com.ajay.synccontacts.utils
 
+import android.accounts.Account
 import android.content.ContentProviderOperation
 import android.content.ContentUris
 import android.content.Context
+import android.database.Cursor
 import android.net.Uri
 import android.provider.ContactsContract
 import android.provider.ContactsContract.AggregationExceptions
@@ -220,7 +222,7 @@ class ContactsManager {
                     .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
                     .withValue(ContactsContract.Data.MIMETYPE, MESSAGE_MIME_TYPE)
                     .withValue(ContactsContract.Data.DATA1, number)
-                    .withValue(ContactsContract.Data.DATA2, contactName)
+                    .withValue(ContactsContract.Data.DATA2, "")
                     .withValue(ContactsContract.Data.DATA3, "Перевести по номеру $number")
                     .build()
             )
@@ -237,7 +239,7 @@ class ContactsManager {
                     .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
                     .withValue(ContactsContract.Data.MIMETYPE, VOICE_MIME_TYPE)
                     .withValue(ContactsContract.Data.DATA1, number)
-                    .withValue(ContactsContract.Data.DATA2, contactName)
+                    .withValue(ContactsContract.Data.DATA2, "")
                     .withValue(ContactsContract.Data.DATA3, "Перевести по СБП на $number")
                     .build()
             )
@@ -254,7 +256,7 @@ class ContactsManager {
                     .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
                     .withValue(ContactsContract.Data.MIMETYPE, VIDEO_MIME_TYPE)
                     .withValue(ContactsContract.Data.DATA1, number)
-                    .withValue(ContactsContract.Data.DATA2, contactName)
+                    .withValue(ContactsContract.Data.DATA2,"")
                     .withValue(ContactsContract.Data.DATA3, "В диалог с $number")
                     .build()
             )

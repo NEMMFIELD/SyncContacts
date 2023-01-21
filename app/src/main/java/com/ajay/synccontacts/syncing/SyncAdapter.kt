@@ -1,7 +1,9 @@
 package com.ajay.synccontacts.syncing
 
 import android.accounts.Account
+import android.annotation.SuppressLint
 import android.content.*
+import android.database.Cursor
 import android.os.Bundle
 import android.provider.ContactsContract
 import android.util.Log
@@ -20,12 +22,6 @@ class SyncAdapter(context: Context, autoInitialize: Boolean) :
     private val TAG: String = javaClass.simpleName
     private var mContactsList: ArrayList<Contact> = ArrayList()
 
-    private var dummyServerResponseList: ArrayList<String> = arrayListOf(
-        "79778384682",
-        "79778384680",
-        "996555118811",
-    )
-    private var serverNumberList: ArrayList<String> = ArrayList()
 
     init {
         mContactsList = getContactData()
@@ -37,7 +33,7 @@ class SyncAdapter(context: Context, autoInitialize: Boolean) :
         extras: Bundle?,
         authority: String?,
         provider: ContentProviderClient?,
-        syncResult: SyncResult?
+        syncResult: SyncResult?,
     ) {
         Log.i(TAG, "SyncAdapter called")
 
@@ -56,25 +52,59 @@ class SyncAdapter(context: Context, autoInitialize: Boolean) :
          */
 
         //region Dummy response
-//        mContactsList = getContactData()
-
+        mContactsList = getContactData()
+        var myType = ""
+        var myNumber = ""
         for (contact in mContactsList) {
             for (number in contact.numbers) {
                 if (isNumberAlreadyRegistered(number)) {
-                    // If number is registered and invalid on server, delete it
-                    if (!dummyServerResponseList.contains(getFormattedNumber(number))) {
+
+                    val dataCursor: Cursor = context.contentResolver.query(
+                        ContactsContract.Data.CONTENT_URI,
+                        arrayOf(ContactsContract.Data.DATA1, ContactsContract.Data.DATA2),
+                        "${ContactsContract.CommonDataKinds.Phone.TYPE} == ${ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE} AND ${ContactsContract.CommonDataKinds.Phone.RAW_CONTACT_ID} = ${contact.id}",
+                        null, null
+                    ) ?: return
+                    if (dataCursor.moveToFirst()) {
+                        do {
+                            myNumber = dataCursor.getString(0)
+                            myType = dataCursor.getString(1)
+                        } while (dataCursor.moveToNext())
+                        dataCursor.close()
+                    }
+                    println("MyNumber :$myNumber")
+                    println("mytype: $myType")
+                    if (myNumber != number) {
+                        ContactsManager.deleteNumber(context,number)
+                    }
+
+                    if (myType != ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE.toString()) {
                         ContactsManager.deleteNumber(context, number)
+                        /* context.contentResolver.delete(
+                             ContactsContract.RawContacts.CONTENT_URI,
+                             ContactsContract.RawContacts.ACCOUNT_TYPE + " = ?",
+                             arrayOf(Constants.ACCOUNT_TYPE)
+                         )*/
                     }
                 } else {
                     // If number is not registered and valid on server, register it
-                    if (dummyServerResponseList.contains(getFormattedNumber(number))) {
-                        ContactsManager.registerNumber(
-                            context,
-                            number,
-                            contact.name,
-                            contact.rawContactIdMap
-                        )
+                    val cursor:Cursor = context.contentResolver.query(
+                        ContactsContract.Data.CONTENT_URI,
+                        arrayOf(ContactsContract.Data.DATA1),
+                        "${ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ${contact.id}",
+                        null, null
+                    ) ?: return
+                    while (cursor.moveToNext()) {
+                        val dataNumber = cursor.getString(0)
+                        ContactsManager.deleteNumber(context, dataNumber)
+                        println("data1 $dataNumber and id is ${contact.id}")
                     }
+                    ContactsManager.registerNumber(
+                        context,
+                        number,
+                        contact.name,
+                        contact.rawContactIdMap
+                    )
                 }
             }
         }
